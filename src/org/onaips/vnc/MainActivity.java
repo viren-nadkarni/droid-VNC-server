@@ -37,6 +37,7 @@ import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -93,19 +94,28 @@ public class MainActivity extends Activity
 
     public class ActivityUpdateReceiver extends BroadcastReceiver
     {
+        //this method receives broadcast messages. Be sure to modify AndroidManifest.xml file in order to enable message receiving
         @Override
-        public void onReceive(Context context, Intent intent)//this method receives broadcast messages. Be sure to modify AndroidManifest.xml file in order to enable message receiving
+        public void onReceive(Context context, Intent intent)
         {
             log("ActivityUpdateReceiver.onReceive");
             try {
                 Thread.sleep(2000);
             } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
 
-            log("ServerManager.isServerRunning() = "+ServerManager.isServerRunning());
-            setStateLabels(ServerManager.isServerRunning());
+            new AsyncTask<Void, Void, Void>() {
+                boolean isRunning = false;
+                protected Void doInBackground(Void... voids) {
+                    isRunning = ServerManager.isServerRunning();
+                    log("Activity-update-receiver: ServerManager.isServerRunning() = " + isRunning);
+                    return null;
+                }
+                protected void onPostExecute(Void v) {
+                    setStateLabels(isRunning);
+                }
+            }.execute((Void) null);
         }
     }
 
@@ -176,7 +186,21 @@ public class MainActivity extends Activity
         }
 
         showInitialScreen(false);
-        setStateLabels(ServerManager.isServerRunning());
+
+        // This needs to be async (different thread) so it doesn't
+        // piss off the UI thread.  The labels then are adjusted in the UI
+        // thread after the main task completes.
+        // (love the verbosity of Java for this stuff)
+        new AsyncTask<Void, Void, Void>() {
+            boolean isRunning = false;
+            protected Void doInBackground(Void... voids) {
+                isRunning = ServerManager.isServerRunning();
+                return null;
+            }
+            protected void onPostExecute(Void v) {
+                setStateLabels(isRunning);
+            }
+        }.execute((Void) null);
 
         // register wifi event receiver
         registerReceiver(mReceiver,  new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
@@ -198,17 +222,25 @@ public class MainActivity extends Activity
                     public void onAnimationStart(Animation animation) {
                         b.setEnabled(false);
 
-                        if (ServerManager.isServerRunning())
-                            stopServer();
-                        else
-                            startServer();
+                        new AsyncTask<Void, Void, Void>() {
+                            boolean isRunning = false;
+                            protected Void doInBackground(Void... voids) {
+                                isRunning = ServerManager.isServerRunning();
+                                if (isRunning) {
+                                    stopServer();
+                                } else {
+                                    startServer();
+                                }
+                                return null;
+                            }
+                        }.execute((Void) null);
                     }
                 });
                 b.startAnimation(buttonAnimation);
 
                 return;
             }
-        }) ;
+        });
         findViewById(R.id.Button02).setOnClickListener(new OnClickListener() {
             public void onClick(View arg0) {
                 restartServer();
@@ -384,12 +416,18 @@ public class MainActivity extends Activity
         startDialog.setMessage("Restart server?");
         startDialog.setButton(AlertDialog.BUTTON1,"Yes", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface arg0, int arg1) {
-                stopServer();
-                try {
-                    Thread.sleep(2000);
-                } catch (InterruptedException e) {
-                }
-                startServer();
+                new AsyncTask<Void, Void, Void>() {
+                    boolean isRunning = false;
+                    protected Void doInBackground(Void... voids) {
+                        stopServer();
+                        try {
+                            Thread.sleep(2000);
+                        } catch (InterruptedException e) {
+                        }
+                        startServer();
+                        return null;
+                    }
+                }.execute((Void) null);
             }
         });
 
@@ -407,44 +445,41 @@ public class MainActivity extends Activity
         s.startServer();
         Timer t=new Timer();
         t.schedule(new TimerTask() {
-
             @Override
             public void run() {
-                if (!ServerManager.isServerRunning())
-                {
+                final boolean isRunning = ServerManager.isServerRunning();
+                if (! isRunning) {
                     runOnUiThread(new Runnable() {
-
                         public void run() {
                             showTextOnScreen("Could not start server :(");
                             log("Could not start server :(");
-                            setStateLabels(ServerManager.isServerRunning());
+                            setStateLabels(isRunning);
                         }
                     });
                 }
             }
-        },2000);
+        }, 2000);
     }
+
     public void stopServer()
     {
         s.killServer();
         Timer t=new Timer();
         t.schedule(new TimerTask() {
-
             @Override
             public void run() {
-                if (ServerManager.isServerRunning())
-                {
+                final boolean isRunning = ServerManager.isServerRunning();
+                if (isRunning) {
                     runOnUiThread(new Runnable() {
-
                         public void run() {
                             showTextOnScreen("Could not stop server :(");
                             log("Could not stop server :(");
-                            setStateLabels(ServerManager.isServerRunning());
+                            setStateLabels(isRunning);
                         }
                     });
                 }
             }
-        },4000);
+        }, 4000);
     }
 
     public void showHelp()
@@ -484,26 +519,33 @@ public class MainActivity extends Activity
             showHelp();
             break;
         case MENU_REVERSE_CONNECTION:
-            if (ServerManager.isServerRunning())
-            {
-                startDialog = new AlertDialog.Builder(this).create();
-                startDialog.setTitle("Already running");
-                startDialog.setMessage("Restart server?");
-                startDialog.setButton(AlertDialog.BUTTON1,"Yes", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface arg0, int arg1) {
+            new AsyncTask<Void, Void, Void>() {
+                boolean isRunning = false;
+                protected Void doInBackground(Void... voids) {
+                    isRunning = ServerManager.isServerRunning();
+                    return null;
+                }
+                protected void onPostExecute(Void v) {
+                    if (isRunning) {
+                        startDialog = new AlertDialog.Builder(MainActivity.this).create();
+                        startDialog.setTitle("Already running");
+                        startDialog.setMessage("Restart server?");
+                        startDialog.setButton(AlertDialog.BUTTON1,"Yes", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface arg0, int arg1) {
+                                startReverseConnection();
+                            }
+                        });
+
+                        startDialog.setButton2("Cancel", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface arg0, int arg1) {
+                            }
+                        });
+                        startDialog.show();
+                    } else {
                         startReverseConnection();
                     }
-                });
-
-                startDialog.setButton2("Cancel", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface arg0, int arg1) {
-                    }
-                });
-                startDialog.show();
-            }
-            else
-                startReverseConnection();
-
+                }
+            }.execute((Void) null);
             break;
         case MENU_SENDLOG:
             collectAndSendLog();
@@ -543,7 +585,12 @@ public class MainActivity extends Activity
 
         alert.setPositiveButton("Start server", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int whichButton) {
-                s.startReverseConnection(input.getText().toString());
+                new AsyncTask<Void, Void, Void>() {
+                    protected Void doInBackground(Void... voids) {
+                        s.startReverseConnection(input.getText().toString());
+                        return null;
+                    }
+                }.execute((Void) null);
             }
         });
 
@@ -706,8 +753,16 @@ public class MainActivity extends Activity
         @Override public void onReceive(Context context, Intent intent) {
             NetworkInfo info = intent.getParcelableExtra(ConnectivityManager.EXTRA_NETWORK_INFO);
             if (info.getType() == ConnectivityManager.TYPE_MOBILE || info.getType()==ConnectivityManager.TYPE_WIFI) {
-                setStateLabels(ServerManager.isServerRunning());
-
+                new AsyncTask<Void, Void, Void>() {
+                    boolean isRunning = false;
+                    protected Void doInBackground(Void... voids) {
+                        isRunning = ServerManager.isServerRunning();
+                        return null;
+                    }
+                    protected void onPostExecute(Void v) {
+                        setStateLabels(isRunning);
+                    }
+                }.execute((Void) null);
             }
         }
     };

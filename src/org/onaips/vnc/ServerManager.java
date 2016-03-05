@@ -238,7 +238,7 @@ public class ServerManager extends Service {
             else
                 return false;
         } catch (Exception e) {
-            Log.e(MainActivity.VNC_LOG, "isServerRunning() Error: " + e);
+            Log.e(MainActivity.VNC_LOG, "isServerRunning() Error: " + e, e);
             return false;
         }
     }

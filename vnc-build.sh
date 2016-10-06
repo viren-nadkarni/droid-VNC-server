@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -x
 
 # $ vnc-build -a [18|19]
 

@@ -70,15 +70,15 @@ enum method_type method=AUTO;
 #define PIXEL_TO_VIRTUALPIXEL_FB(i,j) ((j+scrinfo.yoffset)*scrinfo.xres_virtual+i+scrinfo.xoffset)
 #define PIXEL_TO_VIRTUALPIXEL(i,j) ((j*screenformat.width)+i)
 
-#define OUT 8 
-#include "updateScreen.c" 
+#define OUT 8
+#include "updateScreen.c"
 #undef OUT
 
 #define OUT 16
 #include "updateScreen.c"
 #undef OUT
 
-#define OUT 32 
+#define OUT 32
 #include "updateScreen.c"
 #undef OUT
 
@@ -89,7 +89,7 @@ inline int getCurrentRotation()
 
 void setIdle(int i)
 {
-	idle=i; 
+	idle=i;
 }
 
 ClientGoneHookPtr clientGone(rfbClientPtr cl)
@@ -145,7 +145,7 @@ void sendServerStopped()
 }
 
 void initVncServer(int argc, char **argv)
-{ 
+{
 
 	vncbuf = calloc(screenformat.width * screenformat.height, screenformat.bitsPerPixel/CHAR_BIT);
 	cmpbuf = calloc(screenformat.width * screenformat.height, screenformat.bitsPerPixel/CHAR_BIT);
@@ -153,7 +153,7 @@ void initVncServer(int argc, char **argv)
 	assert(vncbuf != NULL);
 	assert(cmpbuf != NULL);
 
-	if (rotation==0 || rotation==180) 
+	if (rotation==0 || rotation==180)
 		vncscr = rfbGetScreen(&argc, argv, screenformat.width , screenformat.height, 0 /* not used */ , 3,	screenformat.bitsPerPixel/CHAR_BIT);
 	else
 		vncscr = rfbGetScreen(&argc, argv, screenformat.height, screenformat.width, 0 /* not used */ , 3,	screenformat.bitsPerPixel/CHAR_BIT);
@@ -180,7 +180,7 @@ void initVncServer(int argc, char **argv)
 		passwords[1] = NULL;
 		vncscr->authPasswdData = passwords;
 		vncscr->passwordCheck = rfbCheckPasswordByList;
-	} 
+	}
 
 	vncscr->httpDir = "webclients/";
 //	vncscr->httpEnableProxyConnect = TRUE;
@@ -194,7 +194,7 @@ void initVncServer(int argc, char **argv)
 	vncscr->serverFormat.greenMax = (( 1 << screenformat.greenMax) -1);
 	vncscr->serverFormat.blueMax = (( 1 << screenformat.blueMax) -1);
 
-	vncscr->serverFormat.trueColour = TRUE; 
+	vncscr->serverFormat.trueColour = TRUE;
 	vncscr->serverFormat.bitsPerPixel = screenformat.bitsPerPixel;
 
 	vncscr->alwaysShared = TRUE;
@@ -228,7 +228,7 @@ void rotate(int value)
 
 	L("rotate()\n");
 
-	if (value == -1 || 
+	if (value == -1 ||
 		((value == 90 || value == 270) && (rotation == 0 || rotation == 180)) ||
 		((value == 0 || value == 180) && (rotation == 90 || rotation == 270))) {
 			int h = vncscr->height;
@@ -249,24 +249,24 @@ void rotate(int value)
 		rotation += 90;
 		rotation %= 360;
 	} else {
-		rotation = value;	
+		rotation = value;
 	}
- 
+
 	rfbMarkRectAsModified(vncscr, 0, 0, vncscr->width, vncscr->height);
 }
 
 void close_app()
-{ 	
+{
 	L("Cleaning up...\n");
 	if (method == FRAMEBUFFER)
 		closeFB();
 	else if (method == ADB)
-		closeADB(); 
+		closeADB();
 	else if (method == GRALLOC)
 		closeGralloc();
 	else if (method == FLINGER)
 		closeFlinger();
-	
+
 	cleanupInput();
 	sendServerStopped();
 	unbindIPCserver();
@@ -295,7 +295,7 @@ void extractReverseHostPort(char *str)
 			rport = 5500 + rport;
 		}
 		*p = '\0';
-	} 
+	}
 }
 
 void extractRepeaterHostPort(char *str)
@@ -326,7 +326,7 @@ void extractRepeaterHostPort(char *str)
 void initGrabberMethod()
 {
 	if (method == AUTO) {
-		L("No grabber method selected, auto-detecting...\n"); 
+		L("No grabber method selected, auto-detecting...\n");
 		if (initFlinger() != -1)
 			method = FLINGER;
 		else if (initGralloc()!=-1)
@@ -341,7 +341,7 @@ void initGrabberMethod()
 	} else if (method == FRAMEBUFFER)
 		initFB();
 	else if (method == ADB) {
-		initADB(); 
+		initADB();
 		readBufferADB();
 	}
 	else if (method == GRALLOC)
@@ -353,16 +353,16 @@ void initGrabberMethod()
 rfbClientPtr createRepeaterClient()
 {
 	rfbClientPtr cl;
-	
+
 	L("Checking if repeater host set.\n");
 	if (strlen(repeaterHost) > 0)
 	{
 		L("Repeater host was set.\n");
 		char idString[250];
 		char pv[12];
-		
+
 		cl = rfbRepeaterConnection(vncscr, repeaterHost, repeaterPort, repeaterID);
-		
+
 		if (cl)
 		{
 			L("rfbRepeaterConnection Successful.\n");
@@ -370,7 +370,7 @@ rfbClientPtr createRepeaterClient()
 			cl->onHold = FALSE;
 			rfbStartOnHoldClient(cl);
 		}
-		else 
+		else
 		{
 			char *str=malloc(255*sizeof(char));
 			sprintf(str,"~SHOW|Couldn't connect to repeater host:\n%s\n",repeaterHost);
@@ -382,7 +382,7 @@ rfbClientPtr createRepeaterClient()
 	}
 	else
 		L("No repeater host was set.\n");
-	
+
 	return cl;
 }
 
@@ -395,7 +395,7 @@ void printUsage(char **argv)
 		"-p <password>\t- Password to access server\n"
 		"-e <path to encrypted password file>\t- path to encrypted password file to access server\n"
 		"-r <rotation>\t- Screen rotation (degrees) (0,90,180,270)\n"
-		"-R <host:port>\t- Host for reverse connection\n" 
+		"-R <host:port>\t- Host for reverse connection\n"
 		"-s <scale>\t- Scale percentage (20,30,50,100,150)\n"
 		"-z\t\t- Rotate display 180º (for zte compatibility)\n"
 		"-U <host:port>\t- UltraVNC Repeater host and port\n"
@@ -423,10 +423,10 @@ int main(int argc, char **argv)
 				switch(*(argv[i] + 1)) {
 					case 'h':
 						printUsage(argv);
-						exit(0); 
+						exit(0);
 						break;
-					case 'p': 
-						i++; 
+					case 'p':
+						i++;
 						strcpy(VNC_PASSWORD,argv[i]);
 						break;
                     case 'e':
@@ -437,20 +437,20 @@ int main(int argc, char **argv)
                         // -p and -e are mutually exclusive with -e taking precedence
                         strcpy(VNC_PASSWORD, "");
                         break;
-					case 'f': 
-						i++; 
+					case 'f':
+						i++;
 						FB_setDevice(argv[i]);
 						break;
-					case 'z': 
-						i++; 
+					case 'z':
+						i++;
 						display_rotate_180=1;
 						break;
-					case 'P': 
-						i++; 
+					case 'P':
+						i++;
 						VNC_PORT=atoi(argv[i]);
 						break;
 					case 'r':
-						i++; 
+						i++;
 						r = atoi(argv[i]);
 						if (r==0 || r==90 || r==180 || r==270)
 							rotation = r;
@@ -458,10 +458,10 @@ int main(int argc, char **argv)
 						break;
 					case 's':
 						i++;
-						r=atoi(argv[i]); 
+						r=atoi(argv[i]);
 						if (r >= 1 && r <= 150)
 							scaling = r;
-						else 
+						else
 							scaling = 100;
 						L("scaling to %d%%\n",scaling);
 						break;
@@ -473,7 +473,7 @@ int main(int argc, char **argv)
 						i++;
 						extractRepeaterHostPort(argv[i]);
 						break;
-					case 'S': 
+					case 'S':
 						i++;
 						sprintf(repeaterID,"%d", atoi(argv[i]));
 						break;
@@ -499,7 +499,7 @@ int main(int argc, char **argv)
 						i++;
             // This is where we store the version.
 						printf("androidvncserver version 1.0.1\n");
-						return;
+						return 0;
 				}
 			}
 			i++;
@@ -517,7 +517,7 @@ int main(int argc, char **argv)
 	L("\theight:\t%d\n", (int)screenformat.height);
 	L("\tbpp:\t%d\n", (int)screenformat.bitsPerPixel);
 	L("\tport:\t%d\n", (int)VNC_PORT);
-	L("\tColourmap_rgba=%d:%d:%d:%d\n\tlength=%d:%d:%d:%d\n", screenformat.redShift, screenformat.greenShift, screenformat.blueShift,screenformat.alphaShift, screenformat.redMax,screenformat.greenMax,screenformat.blueMax,screenformat.alphaMax);	
+	L("\tColourmap_rgba=%d:%d:%d:%d\n\tlength=%d:%d:%d:%d\n", screenformat.redShift, screenformat.greenShift, screenformat.blueShift,screenformat.alphaShift, screenformat.redMax,screenformat.greenMax,screenformat.blueMax,screenformat.alphaMax);
 
 	initVncServer(argc, argv);
 
@@ -555,10 +555,10 @@ int main(int argc, char **argv)
 			{
 				L("Repeater connection needs to be reestablished.\n");
 				RepeaterGone = FALSE;
-				repeater = createRepeaterClient();					
+				repeater = createRepeaterClient();
 			}
 		}
-		
+
 		rfbProcessEvents(vncscr,usec);
 
 		if (idle)
@@ -589,7 +589,7 @@ int main(int argc, char **argv)
 		}
 
 		rfbClientPtr client_ptr;
-		
+
 		/* scan screen if at least one client has requested */
 		for (client_ptr = vncscr->clientHead; client_ptr; client_ptr = client_ptr->next)
 		{

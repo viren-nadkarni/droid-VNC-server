@@ -209,15 +209,15 @@ extern "C" screenFormat getscreenformat_flinger()
 
 extern "C" int init_flinger()
 {
-    int errno;
+    int errcode;
 
     L("--Initializing JellyBean access method--\n");
 
     screenshotClient = new ScreenshotClient();
     L("ScreenFormat: %d\n", screenshotClient->getFormat());
-    errno = screenshotClient->update(display, Rect(), true);
+    errcode = screenshotClient->update(display, Rect(), true);
     L("Screenshot client updated its display on init.\n");
-    if (display != NULL && errno == NO_ERROR)
+    if (display != NULL && errcode == NO_ERROR)
         return 0;
     else
         return -1;

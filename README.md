@@ -12,4 +12,4 @@ Specify API level with `-a`
 
 Use `-w` flag to build the wrapper libs; AOSP source is required at `../aosp`
 
-Wrapper libs for API 19 to 25 have been prebuilt in [](nativeMethods/libs/armeabi-v7a/) and should work out of the box
+Wrapper libs for API 19 to 25 have been prebuilt in `nativeMethods/libs/armeabi-v7a/` and should work out of the box
